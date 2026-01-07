@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dropshipping - Bacano Store</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #10B981, #3B82F6);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(90deg, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { color: #6b7280; font-size: 14px; }
+        
+        /* Upload Section */
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .upload-box {
+            border: 2px dashed #4b5563;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.02);
+        }
+        .upload-box:hover { border-color: #10B981; background: rgba(16,185,129,0.1); }
+        .upload-box.loaded { border-color: #10B981; background: rgba(16,185,129,0.15); }
+        .upload-box input { display: none; }
+        .upload-box .icon { font-size: 40px; margin-bottom: 10px; }
+        .upload-box h3 { font-size: 16px; margin-bottom: 5px; }
+        .upload-box p { font-size: 12px; color: #9ca3af; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .tab:hover { background: rgba(255,255,255,0.1); }
+        .tab.active {
+            background: rgba(16,185,129,0.2);
+            color: #10B981;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+        
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card.emerald { border-color: rgba(16,185,129,0.3); background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.02)); }
+        .kpi-card.blue { border-color: rgba(59,130,246,0.3); background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.02)); }
+        .kpi-card.amber { border-color: rgba(245,158,11,0.3); background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.02)); }
+        .kpi-card.red { border-color: rgba(239,68,68,0.3); background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.02)); }
+        .kpi-card.violet { border-color: rgba(139,92,246,0.3); background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.02)); }
+        .kpi-card.pink { border-color: rgba(236,72,153,0.3); background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(236,72,153,0.02)); }
+        
+        .kpi-card .icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        .kpi-card .label { color: #9ca3af; font-size: 12px; margin-bottom: 5px; }
+        .kpi-card .value { font-size: 28px; font-weight: 700; }
+        .kpi-card .subtitle { font-size: 11px; color: #6b7280; margin-top: 5px; }
+        .kpi-card .alert { position: absolute; top: 15px; right: 15px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .emerald .value { color: #10B981; }
+        .blue .value { color: #3B82F6; }
+        .amber .value { color: #F59E0B; }
+        .red .value { color: #EF4444; }
+        .violet .value { color: #8B5CF6; }
+        .pink .value { color: #EC4899; }
+        
+        /* Charts */
+        .chart-container {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-container h3 { font-size: 16px; margin-bottom: 15px; }
+        .chart-wrapper { height: 300px; position: relative; }
+        
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .data-table th { color: #9ca3af; font-weight: 500; font-size: 12px; }
+        .data-table td { font-size: 14px; }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.green { background: rgba(16,185,129,0.2); color: #10B981; }
+        .badge.yellow { background: rgba(245,158,11,0.2); color: #F59E0B; }
+        .badge.red { background: rgba(239,68,68,0.2); color: #EF4444; }
+        
+        /* Funnel */
+        .funnel-step {
+            margin-bottom: 15px;
+        }
+        .funnel-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .funnel-bar {
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .funnel-fill {
+            height: 100%;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            transition: width 0.5s ease;
+        }
+        
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        
+        /* Info box */
+        .info-box {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .info-box.success { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); }
+        .info-box h4 { font-size: 13px; color: #F59E0B; margin-bottom: 5px; }
+        .info-box.success h4 { color: #10B981; }
+        .info-box p { font-size: 12px; color: #d1d5db; line-height: 1.5; }
+        
+        /* Section title */
+        .section-title {
+            font-size: 14px;
+            color: #9ca3af;
+            margin: 25px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        .empty-state .icon { font-size: 60px; margin-bottom: 20px; opacity: 0.5; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .upload-section, .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        /* Tab content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Progress bars for rankings */
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .ranking-name { width: 120px; font-size: 12px; color: #d1d5db; }
+        .ranking-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .ranking-fill { height: 100%; border-radius: 4px; }
+        .ranking-value { width: 50px; text-align: right; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">📦</div>
+            <div>
+                <h1>Dashboard Dropshipping</h1>
+                <p>Bacano Store - Análisis Completo</p>
+            </div>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <label class="upload-box" id="dropiUpload">
+                <input type="file" accept=".xlsx,.xls" onchange="loadFile(this, 'dropi')">
+                <div class="icon">📊</div>
+                <h3>Reporte DROPI</h3>
+                <p id="dropiStatus">Click para subir .xlsx</p>
+            </label>
+            <label class="upload-box" id="shopifyUpload">
+                <input type="file" accept=".xlsx,.xls" onchange="loadFile(this, 'shopify')">
+                <div class="icon">🛒</div>
+                <h3>Pedidos SHOPIFY</h3>
+                <p id="shopifyStatus">Click para subir .xlsx</p>
+            </label>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('resumen')">📊 Resumen</button>
+            <button class="tab" onclick="showTab('entregas')">🚚 Entregas</button>
+            <button class="tab" onclick="showTab('productos')">🛍️ Productos</button>
+            <button class="tab" onclick="showTab('ciudades')">📍 Ciudades</button>
+            <button class="tab" onclick="showTab('funnel')">🔄 Funnel</button>
+        </div>
+        
+        <!-- Content -->
+        <div id="content">
+            <div class="empty-state">
+                <div class="icon">📁</div>
+                <h2>Sube tus archivos para comenzar</h2>
+                <p>Carga tu reporte de Dropi y/o pedidos de Shopify</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dropiData = null;
+        let shopifyData = null;
+        let dropiProcessed = null;
+        let shopifyProcessed = null;
+        let currentTab = 'resumen';
+        
+        function loadFile(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(sheet);
+                    
+                    if (type === 'dropi') {
+                        dropiData = data;
+                        dropiProcessed = processDropiData(data);
+                        document.getElementById('dropiUpload').classList.add('loaded');
+                        document.getElementById('dropiStatus').textContent = '✓ ' + data.length + ' registros cargados';
+                    } else {
+                        shopifyData = data;
+                        shopifyProcessed = processShopifyData(data);
+                        document.getElementById('shopifyUpload').classList.add('loaded');
+                        document.getElementById('shopifyStatus').textContent = '✓ ' + shopifyProcessed.total + ' pedidos cargados';
+                    }
+                    
+                    renderDashboard();
+                } catch (error) {
+                    alert('Error al procesar el archivo: ' + error.message);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+        
+        function processDropiData(data) {
+            const estados = {
+                entregado: ['ENTREGADO'],
+                devolucion: ['DEVOLUCION', 'CANCELADO']
+            };
+            
+            const total = data.length;
+            const entregados = data.filter(r => estados.entregado.includes(r['ESTATUS'])).length;
+            const devoluciones = data.filter(r => estados.devolucion.includes(r['ESTATUS'])).length;
+            const enProceso = total - entregados - devoluciones;
+            const finalizados = entregados + devoluciones;
+            const tasaEfectividad = finalizados > 0 ? ((entregados / finalizados) * 100).toFixed(1) : 0;
+            const tasaDevolucion = finalizados > 0 ? ((devoluciones / finalizados) * 100).toFixed(1) : 0;
+            
+            const entregadosData = data.filter(r => estados.entregado.includes(r['ESTATUS']));
+            const ventasEfectivas = entregadosData.reduce((sum, r) => sum + (Number(r['TOTAL DE LA ORDEN']) || 0), 0);
+            const ganancia = entregadosData.reduce((sum, r) => sum + (Number(r['GANANCIA']) || 0), 0);
+            const ticketPromedio = entregados > 0 ? ventasEfectivas / entregados : 0;
+            const margen = ventasEfectivas > 0 ? ((ganancia / ventasEfectivas) * 100).toFixed(1) : 0;
+            
+            // Por transportadora
+            const transportadoras = {};
+            data.forEach(r => {
+                const t = r['TRANSPORTADORA'];
+                if (!t) return;
+                if (!transportadoras[t]) transportadoras[t] = { total: 0, entregados: 0, devoluciones: 0 };
+                transportadoras[t].total++;
+                if (estados.entregado.includes(r['ESTATUS'])) transportadoras[t].entregados++;
+                if (estados.devolucion.includes(r['ESTATUS'])) transportadoras[t].devoluciones++;
+            });
+            
+            const transportadorasData = Object.entries(transportadoras).map(([name, d]) => ({
+                name,
+                total: d.total,
+                entregados: d.entregados,
+                devoluciones: d.devoluciones,
+                efectividad: d.entregados + d.devoluciones > 0 ? ((d.entregados / (d.entregados + d.devoluciones)) * 100).toFixed(1) : 0
+            })).sort((a, b) => b.total - a.total);
+            
+            // Por ciudad
+            const ciudades = {};
+            data.forEach(r => {
+                const c = r['CIUDAD DESTINO'];
+                if (!c) return;
+                if (!ciudades[c]) ciudades[c] = { total: 0, entregados: 0, devoluciones: 0 };
+                ciudades[c].total++;
+                if (estados.entregado.includes(r['ESTATUS'])) ciudades[c].entregados++;
+                if (estados.devolucion.includes(r['ESTATUS'])) ciudades[c].devoluciones++;
+            });
+            
+            const ciudadesData = Object.entries(ciudades).map(([name, d]) => ({
+                name,
+                total: d.total,
+                entregados: d.entregados,
+                devoluciones: d.devoluciones,
+                efectividad: d.entregados + d.devoluciones > 0 ? ((d.entregados / (d.entregados + d.devoluciones)) * 100).toFixed(1) : 0
+            })).sort((a, b) => b.total - a.total).slice(0, 15);
+            
+            // Por producto
+            const productos = {};
+            data.forEach(r => {
+                const p = r['PRODUCTO'];
+                if (!p) return;
+                if (!productos[p]) productos[p] = { total: 0, ventas: 0, ganancia: 0, entregados: 0, devoluciones: 0 };
+                productos[p].total++;
+                productos[p].ventas += Number(r['TOTAL DE LA ORDEN']) || 0;
+                productos[p].ganancia += Number(r['GANANCIA']) || 0;
+                if (estados.entregado.includes(r['ESTATUS'])) productos[p].entregados++;
+                if (estados.devolucion.includes(r['ESTATUS'])) productos[p].devoluciones++;
+            });
+            
+            const productosData = Object.entries(productos).map(([name, d]) => ({
+                name,
+                total: d.total,
+                ventas: d.ventas,
+                ganancia: d.ganancia,
+                margen: d.ventas > 0 ? ((d.ganancia / d.ventas) * 100).toFixed(1) : 0,
+                efectividad: d.entregados + d.devoluciones > 0 ? ((d.entregados / (d.entregados + d.devoluciones)) * 100).toFixed(1) : 0
+            })).sort((a, b) => b.total - a.total).slice(0, 10);
+            
+            // Novedades
+            const novedades = {};
+            data.forEach(r => {
+                const n = r['NOVEDAD'];
+                if (!n) return;
+                if (!novedades[n]) novedades[n] = 0;
+                novedades[n]++;
+            });
+            
+            const novedadesData = Object.entries(novedades)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 6);
+            
+            const totalNovedades = Object.values(novedades).reduce((a, b) => a + b, 0);
+            
+            return {
+                total, entregados, devoluciones, enProceso, tasaEfectividad, tasaDevolucion,
+                ventasEfectivas, ganancia, ticketPromedio, margen,
+                transportadorasData, ciudadesData, productosData, novedadesData, totalNovedades
+            };
+        }
+        
+        function processShopifyData(data) {
+            const validData = data.filter(r => r['N° DE PEDIDO'] && String(r['N° DE PEDIDO']).startsWith('#'));
+            const total = validData.length;
+            
+            const estados = {};
+            validData.forEach(r => {
+                const e = r['ESTADO'] || 'SIN ESTADO';
+                if (!estados[e]) estados[e] = 0;
+                estados[e]++;
+            });
+            
+            const enviadosDropi = estados['ENVIADO A DROPI'] || 0;
+            const contactados = estados['CONTACTADO'] || 0;
+            const cancelados = estados['CANCELADO'] || 0;
+            const sinCobertura = estados['SIN COBERTURA'] || 0;
+            
+            const tasaConfirmacion = total > 0 ? (((enviadosDropi + contactados) / total) * 100).toFixed(1) : 0;
+            const tasaCancelacion = total > 0 ? ((cancelados / total) * 100).toFixed(1) : 0;
+            
+            // UTM Sources
+            const utmSources = {};
+            validData.forEach(r => {
+                const u = r['UTM SOURCE (RRSS)'];
+                if (!u) return;
+                if (!utmSources[u]) utmSources[u] = 0;
+                utmSources[u]++;
+            });
+            
+            const utmData = Object.entries(utmSources)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value);
+            
+            // Productos
+            const productos = {};
+            validData.forEach(r => {
+                const p = r['NOMBRE DEL PRODUCTO'];
+                if (!p) return;
+                if (!productos[p]) productos[p] = { total: 0, ventas: 0 };
+                productos[p].total++;
+                productos[p].ventas += Number(r['PRECIO TOTAL']) || 0;
+            });
+            
+            const productosData = Object.entries(productos)
+                .map(([name, d]) => ({ name, total: d.total, ventas: d.ventas }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 10);
+            
+            const ventasTotales = validData.reduce((sum, r) => sum + (Number(r['PRECIO TOTAL']) || 0), 0);
+            const ticketPromedio = total > 0 ? ventasTotales / total : 0;
+            
+            return {
+                total, enviadosDropi, contactados, cancelados, sinCobertura,
+                tasaConfirmacion, tasaCancelacion, ventasTotales, ticketPromedio,
+                utmData, productosData, estados
+            };
+        }
+        
+        function formatCOP(value) {
+            if (!value || isNaN(value)) return '$0';
+            if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+            if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+            return '$' + value.toLocaleString();
+        }
+        
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderDashboard();
+        }
+        
+        function renderDashboard() {
+            if (!dropiProcessed && !shopifyProcessed) return;
+            
+            let html = '';
+            
+            if (currentTab === 'resumen') {
+                html = renderResumen();
+            } else if (currentTab === 'entregas') {
+                html = renderEntregas();
+            } else if (currentTab === 'productos') {
+                html = renderProductos();
+            } else if (currentTab === 'ciudades') {
+                html = renderCiudades();
+            } else if (currentTab === 'funnel') {
+                html = renderFunnel();
+            }
+            
+            document.getElementById('content').innerHTML = html;
+            
+            // Render charts after DOM update
+            setTimeout(() => {
+                if (currentTab === 'entregas' && dropiProcessed) renderTransportadorasChart();
+                if (currentTab === 'productos') renderProductosChart();
+                if (currentTab === 'ciudades' && dropiProcessed) renderCiudadesChart();
+            }, 100);
+        }
+        
+        function renderResumen() {
+            let html = '';
+            
+            if (dropiProcessed) {
+                html += `<div class="section-title">🚚 DROPI - Métricas de Entrega</div>`;
+                html += `<div class="kpi-grid">
+                    <div class="kpi-card blue">
+                        <div class="icon">📦</div>
+                        <div class="label">Total Pedidos</div>
+                        <div class="value">${dropiProcessed.total.toLocaleString()}</div>
+                    </div>
+                    <div class="kpi-card ${Number(dropiProcessed.tasaEfectividad) >= 80 ? 'emerald' : 'amber'}">
+                        ${Number(dropiProcessed.tasaEfectividad) < 75 ? '<div class="alert"></div>' : ''}
+                        <div class="icon">🎯</div>
+                        <div class="label">Tasa Efectividad</div>
+                        <div class="value">${dropiProcessed.tasaEfectividad}%</div>
+                        <div class="subtitle">${dropiProcessed.entregados} entregados</div>
+                    </div>
+                    <div class="kpi-card ${Number(dropiProcessed.tasaDevolucion) <= 20 ? 'emerald' : 'red'}">
+                        ${Number(dropiProcessed.tasaDevolucion) > 25 ? '<div class="alert"></div>' : ''}
+                        <div class="icon">↩️</div>
+                        <div class="label">Tasa Devolución</div>
+                        <div class="value">${dropiProcessed.tasaDevolucion}%</div>
+                        <div class="subtitle">${dropiProcessed.devoluciones} devueltos</div>
+                    </div>
+                    <div class="kpi-card amber">
+                        <div class="icon">⏳</div>
+                        <div class="label">En Proceso</div>
+                        <div class="value">${dropiProcessed.enProceso}</div>
+                    </div>
+                </div>`;
+                
+                html += `<div class="kpi-grid">
+                    <div class="kpi-card emerald">
+                        <div class="icon">💰</div>
+                        <div class="label">Ventas Efectivas</div>
+                        <div class="value">${formatCOP(dropiProcessed.ventasEfectivas)}</div>
+                    </div>
+                    <div class="kpi-card violet">
+                        <div class="icon">📈</div>
+                        <div class="label">Ganancia</div>
+                        <div class="value">${formatCOP(dropiProcessed.ganancia)}</div>
+                        <div class="subtitle">Margen: ${dropiProcessed.margen}%</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="icon">🎫</div>
+                        <div class="label">Ticket Promedio</div>
+                        <div class="value">${formatCOP(dropiProcessed.ticketPromedio)}</div>
+                    </div>
+                    <div class="kpi-card amber">
+                        <div class="icon">⚠️</div>
+                        <div class="label">Novedades</div>
+                        <div class="value">${dropiProcessed.totalNovedades}</div>
+                        <div class="subtitle">${((dropiProcessed.totalNovedades/dropiProcessed.total)*100).toFixed(1)}% del total</div>
+                    </div>
+                </div>`;
+            }
+            
+            if (shopifyProcessed) {
+                html += `<div class="section-title">🛒 SHOPIFY - Métricas de Pedidos</div>`;
+                html += `<div class="kpi-grid">
+                    <div class="kpi-card pink">
+                        <div class="icon">🛍️</div>
+                        <div class="label">Total Pedidos</div>
+                        <div class="value">${shopifyProcessed.total.toLocaleString()}</div>
+                    </div>
+                    <div class="kpi-card ${Number(shopifyProcessed.tasaConfirmacion) >= 85 ? 'emerald' : 'amber'}">
+                        <div class="icon">✅</div>
+                        <div class="label">Tasa Confirmación</div>
+                        <div class="value">${shopifyProcessed.tasaConfirmacion}%</div>
+                        <div class="subtitle">${shopifyProcessed.enviadosDropi + shopifyProcessed.contactados} confirmados</div>
+                    </div>
+                    <div class="kpi-card ${Number(shopifyProcessed.tasaCancelacion) <= 10 ? 'emerald' : 'red'}">
+                        <div class="icon">❌</div>
+                        <div class="label">Cancelados</div>
+                        <div class="value">${shopifyProcessed.tasaCancelacion}%</div>
+                        <div class="subtitle">${shopifyProcessed.cancelados} pedidos</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="icon">💵</div>
+                        <div class="label">Ventas Totales</div>
+                        <div class="value">${formatCOP(shopifyProcessed.ventasTotales)}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // Quick Funnel
+            if (shopifyProcessed && dropiProcessed) {
+                const conversionTotal = ((dropiProcessed.entregados / shopifyProcessed.total) * 100).toFixed(1);
+                html += `
+                <div class="chart-container">
+                    <h3>📊 Funnel Rápido de Conversión</h3>
+                    <div class="funnel-step">
+                        <div class="funnel-header">
+                            <span>Pedidos Shopify</span>
+                            <span><strong>${shopifyProcessed.total.toLocaleString()}</strong></span>
+                        </div>
+                        <div class="funnel-bar">
+                            <div class="funnel-fill" style="width: 100%; background: #EC4899;">100%</div>
+                        </div>
+                    </div>
+                    <div class="funnel-step">
+                        <div class="funnel-header">
+                            <span>Enviados a Dropi</span>
+                            <span><strong>${shopifyProcessed.enviadosDropi.toLocaleString()}</strong> (${((shopifyProcessed.enviadosDropi/shopifyProcessed.total)*100).toFixed(1)}%)</span>
+                        </div>
+                        <div class="funnel-bar">
+                            <div class="funnel-fill" style="width: ${(shopifyProcessed.enviadosDropi/shopifyProcessed.total)*100}%; background: #3B82F6;">${((shopifyProcessed.enviadosDropi/shopifyProcessed.total)*100).toFixed(0)}%</div>
+                        </div>
+                    </div>
+                    <div class="funnel-step">
+                        <div class="funnel-header">
+                            <span>Entregados</span>
+                            <span><strong>${dropiProcessed.entregados.toLocaleString()}</strong> (${conversionTotal}%)</span>
+                        </div>
+                        <div class="funnel-bar">
+                            <div class="funnel-fill" style="width: ${conversionTotal}%; background: #10B981;">${Math.round(conversionTotal)}%</div>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <h4>💡 Insight Principal</h4>
+                        <p>De cada <strong>100 pedidos</strong> en Shopify, <strong style="color:#10B981">${Math.round(conversionTotal)}</strong> se entregan exitosamente. 
+                        Se pierden <strong style="color:#EF4444">${100 - Math.round(conversionTotal)}</strong> en el proceso.</p>
+                    </div>
+                </div>`;
+            }
+            
+            return html;
+        }
+        
+        function renderEntregas() {
+            if (!dropiProcessed) return '<div class="empty-state"><p>Carga tu reporte de Dropi para ver esta sección</p></div>';
+            
+            let html = `
+            <div class="chart-container">
+                <h3>🚚 Efectividad por Transportadora</h3>
+                <canvas id="transportadorasChart" height="200"></canvas>
+            </div>
+            
+            <div class="grid-3">
+                ${dropiProcessed.transportadorasData.map(t => `
+                    <div class="kpi-card ${Number(t.efectividad) >= 77 ? 'emerald' : Number(t.efectividad) >= 75 ? 'amber' : 'red'}">
+                        <div class="label">${t.name}</div>
+                        <div class="value">${t.efectividad}%</div>
+                        <div class="subtitle">${t.total} pedidos | ${t.entregados} entregados</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="chart-container" style="margin-top:20px">
+                <h3>⚠️ Principales Novedades</h3>
+                ${dropiProcessed.novedadesData.map((n, i) => `
+                    <div class="ranking-item">
+                        <div class="ranking-name">${n.name.substring(0, 25)}${n.name.length > 25 ? '...' : ''}</div>
+                        <div class="ranking-bar">
+                            <div class="ranking-fill" style="width: ${(n.value / dropiProcessed.novedadesData[0].value) * 100}%; background: #F59E0B;"></div>
+                        </div>
+                        <div class="ranking-value" style="color: #F59E0B;">${n.value}</div>
+                    </div>
+                `).join('')}
+            </div>`;
+            
+            return html;
+        }
+        
+        function renderProductos() {
+            let html = '';
+            
+            if (dropiProcessed) {
+                html += `
+                <div class="chart-container">
+                    <h3>🛍️ Top Productos DROPI (por pedidos)</h3>
+                    <canvas id="productosDropiChart" height="250"></canvas>
+                </div>
+                
+                <div class="grid-2" style="margin-top:20px">
+                    ${dropiProcessed.productosData.slice(0, 4).map(p => `
+                        <div class="kpi-card">
+                            <div class="label">${p.name}</div>
+                            <div class="value" style="color:#3B82F6">${p.total} pedidos</div>
+                            <div class="subtitle">Efectividad: ${p.efectividad}% | Margen: ${p.margen}%</div>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+            
+            if (shopifyProcessed) {
+                html += `
+                <div class="chart-container" style="margin-top:20px">
+                    <h3>🛒 Top Productos SHOPIFY (por pedidos)</h3>
+                    <canvas id="productosShopifyChart" height="250"></canvas>
+                </div>`;
+            }
+            
+            return html || '<div class="empty-state"><p>Carga tus archivos para ver esta sección</p></div>';
+        }
+        
+        function renderCiudades() {
+            if (!dropiProcessed) return '<div class="empty-state"><p>Carga tu reporte de Dropi para ver esta sección</p></div>';
+            
+            const mejores = dropiProcessed.ciudadesData.filter(c => Number(c.efectividad) >= 80).slice(0, 5);
+            const peores = dropiProcessed.ciudadesData.filter(c => Number(c.efectividad) < 70).sort((a,b) => a.efectividad - b.efectividad).slice(0, 5);
+            
+            let html = `
+            <div class="chart-container">
+                <h3>📍 Efectividad por Ciudad (Top 15)</h3>
+                <canvas id="ciudadesChart" height="300"></canvas>
+            </div>
+            
+            <div class="grid-2" style="margin-top:20px">
+                <div class="chart-container" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2);">
+                    <h3 style="color:#10B981">✅ Mejores Ciudades</h3>
+                    ${mejores.map((c, i) => `
+                        <div class="ranking-item">
+                            <div class="ranking-name">${i+1}. ${c.name}</div>
+                            <div class="ranking-bar">
+                                <div class="ranking-fill" style="width: ${c.efectividad}%; background: #10B981;"></div>
+                            </div>
+                            <div class="ranking-value" style="color: #10B981;">${c.efectividad}%</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="chart-container" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2);">
+                    <h3 style="color:#EF4444">⚠️ Ciudades Críticas</h3>
+                    ${peores.map((c, i) => `
+                        <div class="ranking-item">
+                            <div class="ranking-name">${i+1}. ${c.name}</div>
+                            <div class="ranking-bar">
+                                <div class="ranking-fill" style="width: ${c.efectividad}%; background: #EF4444;"></div>
+                            </div>
+                            <div class="ranking-value" style="color: #EF4444;">${c.efectividad}%</div>
+                        </div>
+                    `).join('')}
+                    <div class="info-box" style="margin-top:15px; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2);">
+                        <h4 style="color:#EF4444">💡 Recomendación</h4>
+                        <p>Confirma por WhatsApp antes de enviar a estas ciudades</p>
+                    </div>
+                </div>
+            </div>`;
+            
+            return html;
+        }
+        
+        function renderFunnel() {
+            if (!shopifyProcessed || !dropiProcessed) {
+                return '<div class="empty-state"><p>Carga ambos archivos (Dropi y Shopify) para ver el funnel completo</p></div>';
+            }
+            
+            const steps = [
+                { label: 'Pedidos en Shopify', value: shopifyProcessed.total, pct: 100, color: '#EC4899' },
+                { label: 'Confirmados', value: shopifyProcessed.enviadosDropi + shopifyProcessed.contactados, pct: ((shopifyProcessed.enviadosDropi + shopifyProcessed.contactados)/shopifyProcessed.total)*100, color: '#3B82F6' },
+                { label: 'Enviados a Dropi', value: shopifyProcessed.enviadosDropi, pct: (shopifyProcessed.enviadosDropi/shopifyProcessed.total)*100, color: '#8B5CF6' },
+                { label: 'En Dropi', value: dropiProcessed.total, pct: (dropiProcessed.total/shopifyProcessed.total)*100, color: '#F59E0B' },
+                { label: 'Entregados', value: dropiProcessed.entregados, pct: (dropiProcessed.entregados/shopifyProcessed.total)*100, color: '#10B981' },
+            ];
+            
+            let html = `
+            <div class="chart-container">
+                <h3>🔄 Funnel Completo de Ventas</h3>
+                ${steps.map(s => `
+                    <div class="funnel-step">
+                        <div class="funnel-header">
+                            <span>${s.label}</span>
+                            <span><strong>${s.value.toLocaleString()}</strong> (${s.pct.toFixed(1)}%)</span>
+                        </div>
+                        <div class="funnel-bar">
+                            <div class="funnel-fill" style="width: ${s.pct}%; background: ${s.color};">${s.pct > 15 ? s.pct.toFixed(0) + '%' : ''}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="section-title">📊 Tasas de Conversión</div>
+            <div class="grid-3">
+                <div class="kpi-card blue">
+                    <div class="label">Tasa Confirmación</div>
+                    <div class="value">${shopifyProcessed.tasaConfirmacion}%</div>
+                    <div class="subtitle">Shopify → Confirmado</div>
+                </div>
+                <div class="kpi-card violet">
+                    <div class="label">Tasa Entrega</div>
+                    <div class="value">${dropiProcessed.tasaEfectividad}%</div>
+                    <div class="subtitle">Dropi → Entregado</div>
+                </div>
+                <div class="kpi-card emerald">
+                    <div class="label">Conversión Total</div>
+                    <div class="value">${((dropiProcessed.entregados/shopifyProcessed.total)*100).toFixed(1)}%</div>
+                    <div class="subtitle">Shopify → Entregado</div>
+                </div>
+            </div>
+            
+            <div class="info-box success" style="margin-top:20px">
+                <h4>🎯 Resumen del Funnel</h4>
+                <p>
+                    <strong>Pérdida en Confirmación:</strong> ${(100 - Number(shopifyProcessed.tasaConfirmacion)).toFixed(1)}% (cancelados, sin cobertura, etc.)<br>
+                    <strong>Pérdida en Entrega:</strong> ${dropiProcessed.tasaDevolucion}% (devoluciones)<br>
+                    <strong>Conversión Final:</strong> De cada 100 pedidos, ${((dropiProcessed.entregados/shopifyProcessed.total)*100).toFixed(0)} se entregan exitosamente
+                </p>
+            </div>`;
+            
+            return html;
+        }
+        
+        function renderTransportadorasChart() {
+            const ctx = document.getElementById('transportadorasChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dropiProcessed.transportadorasData.map(t => t.name),
+                    datasets: [{
+                        label: 'Efectividad %',
+                        data: dropiProcessed.transportadorasData.map(t => t.efectividad),
+                        backgroundColor: dropiProcessed.transportadorasData.map(t => 
+                            Number(t.efectividad) >= 77 ? '#10B981' : Number(t.efectividad) >= 75 ? '#F59E0B' : '#EF4444'
+                        ),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { display: false }, ticks: { color: '#fff' } }
+                    }
+                }
+            });
+        }
+        
+        function renderProductosChart() {
+            if (dropiProcessed) {
+                const ctx1 = document.getElementById('productosDropiChart');
+                if (ctx1) {
+                    new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: dropiProcessed.productosData.map(p => p.name.substring(0, 15)),
+                            datasets: [{
+                                label: 'Pedidos',
+                                data: dropiProcessed.productosData.map(p => p.total),
+                                backgroundColor: '#3B82F6',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { color: '#9ca3af', maxRotation: 45 } },
+                                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            if (shopifyProcessed) {
+                const ctx2 = document.getElementById('productosShopifyChart');
+                if (ctx2) {
+                    new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: shopifyProcessed.productosData.map(p => p.name.substring(0, 15)),
+                            datasets: [{
+                                label: 'Pedidos',
+                                data: shopifyProcessed.productosData.map(p => p.total),
+                                backgroundColor: '#EC4899',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { color: '#9ca3af', maxRotation: 45 } },
+                                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        
+        function renderCiudadesChart() {
+            const ctx = document.getElementById('ciudadesChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dropiProcessed.ciudadesData.map(c => c.name),
+                    datasets: [{
+                        label: 'Efectividad %',
+                        data: dropiProcessed.ciudadesData.map(c => c.efectividad),
+                        backgroundColor: dropiProcessed.ciudadesData.map(c => 
+                            Number(c.efectividad) >= 80 ? '#10B981' : Number(c.efectividad) >= 70 ? '#F59E0B' : '#EF4444'
+                        ),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
